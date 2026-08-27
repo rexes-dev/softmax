@@ -11,6 +11,7 @@
 
 # clangd
 .cache
+.clangd
 
 # Misc
 build/

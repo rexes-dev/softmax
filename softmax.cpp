@@ -14,7 +14,7 @@ void naive_softmax_host(const float *x, float *y, std::size_t V) {
 }
 
 void safe_softmax_host(const float *x, float *y, std::size_t V) {
-  float m = -std::numeric_limits<float>::infinity();
+  float m = -std::numeric_limits<float>::max();
   for (std::size_t i = 0; i < V; ++i)
     m = std::max(m, x[i]); // load
 
@@ -27,7 +27,7 @@ void safe_softmax_host(const float *x, float *y, std::size_t V) {
 }
 
 void online_softmax_host(const float *x, float *y, std::size_t V) {
-  float m = -std::numeric_limits<float>::infinity();
+  float m = -std::numeric_limits<float>::max();
   float d = 0.0f;
   for (std::size_t i = 0; i < V; ++i) {
     float next_m = std::max(m, x[i]);

@@ -34,7 +34,10 @@ __global__ void safe_softmax_kernel(const float *x, float *y, std::size_t V) {
 
   using BlockReduce = cub::BlockReduce<float, kBlockDim>;
   __shared__ typename BlockReduce::TempStorage temp_storage;
-  const auto m_max = BlockReduce(temp_storage).Reduce(m_partial, cuda::maximum<>());
+  const auto m_max =
+      BlockReduce(temp_storage).Reduce(m_partial, [](float a, float b) {
+        return fmaxf(a, b);
+      });
 
   __shared__ float m;
   if (i == 0)
@@ -65,23 +68,19 @@ __global__ void online_softmax_kernel(const float *x, float *y, std::size_t V) {
     const auto d1 = md1.y;
     const auto m2 = md2.x;
     const auto d2 = md2.y;
-    const auto m = max(m1, m2);
+    const auto m = fmaxf(m1, m2);
     const auto d = d1 * __expf(m1 - m) + d2 * __expf(m2 - m);
     return make_float2(m, d);
   };
 
   // -inf - (-inf) = NaN, so I had to set it to max.
-  auto md_partial =
-      make_float2(-cuda::std::numeric_limits<float>::max(), 0);
+  auto md_partial = make_float2(-cuda::std::numeric_limits<float>::max(), 0);
   for (int j = i; j < V; j += kBlockDim)
     md_partial = bin_op(md_partial, make_float2(x[j], 1));
 
   using BlockReduce = cub::BlockReduce<float2, kBlockDim>;
   __shared__ typename BlockReduce::TempStorage temp_storage;
-  // Had to set `num_valid` since -inf - (-inf) == NaN
-  const auto md_total =
-      BlockReduce(temp_storage)
-          .Reduce(md_partial, bin_op);
+  const auto md_total = BlockReduce(temp_storage).Reduce(md_partial, bin_op);
 
   __shared__ float2 md;
   if (i == 0)
