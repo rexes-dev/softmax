@@ -58,6 +58,7 @@ void run_bench(int V, int batch_size, SoftmaxType softmax_type) {
   float *x;
   float *y;
   cudaMalloc(&x, V * batch_size * sizeof(float));
+  cudaMemset(x, 0, V * batch_size * sizeof(float));
   cudaMalloc(&y, V * batch_size * sizeof(float));
 
   CudaTimer timer;
