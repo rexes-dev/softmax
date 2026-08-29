@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 
 void naive_softmax_host(const float *x, float *y, int V, int batch_size) {
   for (int batch_idx = 0; batch_idx < batch_size; ++batch_idx, x += V, y += V) {
@@ -41,5 +42,25 @@ void online_softmax_host(const float *x, float *y, int V, int batch_size) {
     }
     for (std::size_t i = 0; i < V; ++i)
       y[i] = std::exp(x[i] - m) / d;
+  }
+}
+
+void softmax_host(const float *x, float *y, int V, int batch_size,
+                  SoftmaxType softmax_type) {
+  switch (softmax_type) {
+  case SoftmaxType::Naive: {
+    naive_softmax_host(x, y, V, batch_size);
+    break;
+  }
+  case SoftmaxType::Safe: {
+    safe_softmax_host(x, y, V, batch_size);
+    break;
+  }
+  case SoftmaxType::Online: {
+    online_softmax_host(x, y, V, batch_size);
+    break;
+  }
+  default:
+    throw std::runtime_error("Unsupported SoftmaxType");
   }
 }

@@ -58,7 +58,7 @@ TEST(SoftmaxHost, UniformInputIsUniformOutput) {
   const std::vector<float> x = {1.0f, 1.0f, 1.0f, 1.0f};
   std::vector<float> y(x.size());
 
-  safe_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Safe);
 
   for (const float v : y)
     EXPECT_NEAR(v, 0.25f, kTol);
@@ -71,16 +71,16 @@ TEST(SoftmaxHost, MatchesReferenceOnModerateInput) {
   std::vector<float> y(x.size());
 
   // All three variants agree with the reference when nothing overflows.
-  naive_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Naive);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "naive, index " << i;
 
-  safe_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Safe);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "safe, index " << i;
   ExpectIsDistribution(y);
 
-  online_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Online);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "online, index " << i;
   ExpectIsDistribution(y);
@@ -94,8 +94,8 @@ TEST(SoftmaxHost, OnlineMatchesSafe) {
   std::vector<float> safe(x.size());
   std::vector<float> online(x.size());
 
-  safe_softmax_host(x.data(), safe.data(), x.size(), 1);
-  online_softmax_host(x.data(), online.data(), x.size(), 1);
+  softmax_host(x.data(), safe.data(), x.size(), 1, SoftmaxType::Safe);
+  softmax_host(x.data(), online.data(), x.size(), 1, SoftmaxType::Online);
 
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(online[i], safe[i], kTol) << "index " << i;
@@ -110,9 +110,9 @@ TEST(SoftmaxStability, NaiveOverflowsWhereSafeDoesNot) {
   std::vector<float> safe(x.size());
   std::vector<float> online(x.size());
 
-  naive_softmax_host(x.data(), naive.data(), x.size(), 1);
-  safe_softmax_host(x.data(), safe.data(), x.size(), 1);
-  online_softmax_host(x.data(), online.data(), x.size(), 1);
+  softmax_host(x.data(), naive.data(), x.size(), 1, SoftmaxType::Naive);
+  softmax_host(x.data(), safe.data(), x.size(), 1, SoftmaxType::Safe);
+  softmax_host(x.data(), online.data(), x.size(), 1, SoftmaxType::Online);
 
   for (const float v : naive)
     EXPECT_TRUE(std::isnan(v))
@@ -132,9 +132,9 @@ TEST(SoftmaxStability, NaiveUnderflowsOnLargeNegativeInput) {
   std::vector<float> safe(x.size());
   std::vector<float> online(x.size());
 
-  naive_softmax_host(x.data(), naive.data(), x.size(), 1);
-  safe_softmax_host(x.data(), safe.data(), x.size(), 1);
-  online_softmax_host(x.data(), online.data(), x.size(), 1);
+  softmax_host(x.data(), naive.data(), x.size(), 1, SoftmaxType::Naive);
+  softmax_host(x.data(), safe.data(), x.size(), 1, SoftmaxType::Safe);
+  softmax_host(x.data(), online.data(), x.size(), 1, SoftmaxType::Online);
 
   for (const float v : naive)
     EXPECT_TRUE(std::isnan(v))
@@ -154,16 +154,16 @@ TEST(SoftmaxMasked, CausalRowZeroHost) {
   const std::vector<float> want = {1.0f, 0.0f, 0.0f, 0.0f};
   std::vector<float> y(x.size());
 
-  naive_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Naive);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "naive, index " << i;
 
-  safe_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Safe);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "safe, index " << i;
   ExpectIsDistribution(y);
 
-  online_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Online);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "online, index " << i;
   ExpectIsDistribution(y);
@@ -176,23 +176,23 @@ TEST(SoftmaxMasked, InteriorMaskHost) {
   const std::vector<float> want = ReferenceSoftmax(x);
   std::vector<float> y(x.size());
 
-  naive_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Naive);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "naive, index " << i;
 
-  safe_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Safe);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "safe, index " << i;
   ExpectIsDistribution(y);
 
-  online_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Online);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "online, index " << i;
   ExpectIsDistribution(y);
 }
 
 // A mask at the FRONT of the row is what actually broke the -inf sentinel in
-// online_softmax_host: on the first iteration m and x[0] were both -inf, so
+// softmax_host(Online): on the first iteration m and x[0] were both -inf, so
 // d = d * exp(-inf - (-inf)) = NaN before any real logit was seen. Padding
 // masks produce exactly this shape. The finite -FLT_MAX sentinel keeps the
 // subtraction at -inf - (-FLT_MAX) = -inf, whose exp is a harmless 0.
@@ -201,16 +201,16 @@ TEST(SoftmaxMasked, LeadingMaskHost) {
   const std::vector<float> want = ReferenceSoftmax(x);
   std::vector<float> y(x.size());
 
-  naive_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Naive);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "naive, index " << i;
 
-  safe_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Safe);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "safe, index " << i;
   ExpectIsDistribution(y);
 
-  online_softmax_host(x.data(), y.data(), x.size(), 1);
+  softmax_host(x.data(), y.data(), x.size(), 1, SoftmaxType::Online);
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(y[i], want[i], kTol) << "online, index " << i;
   ExpectIsDistribution(y);
@@ -329,15 +329,15 @@ TEST(SoftmaxHostBatch, RowsAreIndependent) {
   const std::vector<float> want = ReferenceSoftmaxBatched(x, V);
   std::vector<float> y(x.size());
 
-  safe_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Safe);
   ExpectBatchNear(y, want, V, HostTol);
   ExpectRowsAreDistributions(y, V);
 
-  online_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Online);
   ExpectBatchNear(y, want, V, HostTol);
   ExpectRowsAreDistributions(y, V);
 
-  naive_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Naive);
   for (const int r : {0, 3, 4}) {
     const std::vector<float> got = Row(y, V, r);
     const std::vector<float> row_want = Row(want, V, r);
@@ -361,21 +361,21 @@ TEST(SoftmaxHostBatch, MatchesReferenceOnDistinctRows) {
   const std::vector<float> want = ReferenceSoftmaxBatched(x, V);
   std::vector<float> y(x.size());
 
-  naive_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Naive);
   {
     SCOPED_TRACE("naive");
     ExpectBatchNear(y, want, V, HostTol);
     ExpectRowsAreDistributions(y, V);
   }
 
-  safe_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Safe);
   {
     SCOPED_TRACE("safe");
     ExpectBatchNear(y, want, V, HostTol);
     ExpectRowsAreDistributions(y, V);
   }
 
-  online_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Online);
   {
     SCOPED_TRACE("online");
     ExpectBatchNear(y, want, V, HostTol);
@@ -399,21 +399,21 @@ TEST(SoftmaxHostBatch, MaskedRowsInBatch) {
   const std::vector<float> want = ReferenceSoftmaxBatched(x, V);
   std::vector<float> y(x.size());
 
-  naive_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Naive);
   {
     SCOPED_TRACE("naive");
     ExpectBatchNear(y, want, V, HostTol);
     ExpectRowsAreDistributions(y, V);
   }
 
-  safe_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Safe);
   {
     SCOPED_TRACE("safe");
     ExpectBatchNear(y, want, V, HostTol);
     ExpectRowsAreDistributions(y, V);
   }
 
-  online_softmax_host(x.data(), y.data(), V, batch_size);
+  softmax_host(x.data(), y.data(), V, batch_size, SoftmaxType::Online);
   {
     SCOPED_TRACE("online");
     ExpectBatchNear(y, want, V, HostTol);
@@ -422,8 +422,6 @@ TEST(SoftmaxHostBatch, MaskedRowsInBatch) {
 }
 
 namespace {
-
-using SoftmaxDev = void (*)(const float *, float *, int, int);
 
 // The kernels use __expf, a fast approximation, so the device tests compare on
 // relative error rather than the tighter absolute tolerance the host tests use.
@@ -448,7 +446,7 @@ protected:
   // would carry on and compare an untouched output buffer.
   //
   // x holds x.size() / V rows of V logits each; every row gets its own block.
-  static void Run(SoftmaxDev softmax_dev, const std::vector<float> &x, int V,
+  static void Run(SoftmaxType type, const std::vector<float> &x, int V,
                   std::vector<float> &y) {
     ASSERT_GT(V, 0);
     ASSERT_EQ(x.size() % static_cast<std::size_t>(V), 0u)
@@ -469,7 +467,7 @@ protected:
     // zero is the right answer for a masked element.
     ASSERT_EQ(cudaMemset(dy, 0xFF, bytes), cudaSuccess);
 
-    softmax_dev(dx, dy, V, batch_size);
+    softmax_dev(dx, dy, V, batch_size, type);
     ASSERT_EQ(cudaGetLastError(), cudaSuccess);
     ASSERT_EQ(cudaDeviceSynchronize(), cudaSuccess);
 
@@ -481,25 +479,25 @@ protected:
   }
 
   // Single-row form: the whole of x is one row.
-  static void Run(SoftmaxDev softmax_dev, const std::vector<float> &x,
+  static void Run(SoftmaxType type, const std::vector<float> &x,
                   std::vector<float> &y) {
-    Run(softmax_dev, x, static_cast<int>(x.size()), y);
+    Run(type, x, static_cast<int>(x.size()), y);
   }
 };
 
 } // namespace
 
 TEST_F(SoftmaxDevice, MatchesHost) {
-  // naive_softmax_dev is the unsafe variant, so keep the inputs in a range
+  // SoftmaxType::Naive is the unsafe variant, so keep the inputs in a range
   // where exp() cannot overflow -- otherwise both sides are NaN and the
   // comparison proves nothing.
   const std::vector<float> x = Ramp(1000, -10.0f, 10.0f);
 
   std::vector<float> want(x.size());
-  naive_softmax_host(x.data(), want.data(), x.size(), 1);
+  softmax_host(x.data(), want.data(), x.size(), 1, SoftmaxType::Naive);
 
   std::vector<float> got;
-  ASSERT_NO_FATAL_FAILURE(Run(naive_softmax_dev, x, got));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Naive, x, got));
 
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(got[i], want[i], DeviceTol(want[i])) << "index " << i;
@@ -520,7 +518,7 @@ TEST_F(SoftmaxDevice, SafeMatchesReferenceAcrossSizes) {
     const std::vector<float> want = ReferenceSoftmax(x);
 
     std::vector<float> got;
-    ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, got));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, got));
 
     for (std::size_t i = 0; i < V; ++i)
       EXPECT_NEAR(got[i], want[i], DeviceTol(want[i])) << "index " << i;
@@ -538,7 +536,7 @@ TEST_F(SoftmaxDevice, SafeMatchesReferenceOnIrregularInput) {
   const std::vector<float> want = ReferenceSoftmax(x);
 
   std::vector<float> got;
-  ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, got));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, got));
 
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(got[i], want[i], DeviceTol(want[i])) << "index " << i;
@@ -553,13 +551,13 @@ TEST_F(SoftmaxDevice, SafeIsStableWhereNaiveOverflows) {
   const std::vector<float> x = {89.0f, 89.0f, 89.0f};
 
   std::vector<float> naive;
-  ASSERT_NO_FATAL_FAILURE(Run(naive_softmax_dev, x, naive));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Naive, x, naive));
   for (const float v : naive)
     EXPECT_TRUE(std::isnan(v))
         << "expected naive softmax to overflow, got " << v;
 
   std::vector<float> safe;
-  ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, safe));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, safe));
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(safe[i], kThird, kTol) << "index " << i;
   ExpectIsDistribution(safe);
@@ -572,21 +570,21 @@ TEST_F(SoftmaxDevice, SafeIsStableWhereNaiveUnderflows) {
   const std::vector<float> x = {-500.0f, -500.0f, -500.0f};
 
   std::vector<float> naive;
-  ASSERT_NO_FATAL_FAILURE(Run(naive_softmax_dev, x, naive));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Naive, x, naive));
   for (const float v : naive)
     EXPECT_TRUE(std::isnan(v))
         << "expected naive softmax to underflow, got " << v;
 
   std::vector<float> safe;
-  ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, safe));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, safe));
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(safe[i], kThird, kTol) << "index " << i;
   ExpectIsDistribution(safe);
 }
 
-// online_softmax_dev fuses the max and the denominator into a single reduction
+// The online kernel fuses the max and the denominator into a single reduction
 // over (m, d) pairs, so it fails in ways the two-pass safe kernel cannot. These
-// mirror the safe_softmax_dev cases so a divergence points at the fused
+// mirror the safe-kernel cases so a divergence points at the fused
 // recurrence rather than at softmax in general.
 TEST_F(SoftmaxDevice, OnlineMatchesReferenceAcrossSizes) {
   const std::vector<std::size_t> sizes = {1, 3, 255, 256, 257, 512, 1000, 4096};
@@ -598,7 +596,7 @@ TEST_F(SoftmaxDevice, OnlineMatchesReferenceAcrossSizes) {
     const std::vector<float> want = ReferenceSoftmax(x);
 
     std::vector<float> got;
-    ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, got));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, got));
 
     for (std::size_t i = 0; i < V; ++i)
       EXPECT_NEAR(got[i], want[i], DeviceTol(want[i])) << "index " << i;
@@ -612,7 +610,7 @@ TEST_F(SoftmaxDevice, OnlineMatchesReferenceOnIrregularInput) {
   const std::vector<float> want = ReferenceSoftmax(x);
 
   std::vector<float> got;
-  ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, got));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, got));
 
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(got[i], want[i], DeviceTol(want[i])) << "index " << i;
@@ -634,10 +632,10 @@ TEST_F(SoftmaxDevice, OnlineMatchesSafeOnBothRampDirections) {
         ascending ? Ramp(4096, -10.0f, 10.0f) : Ramp(4096, 10.0f, -10.0f);
 
     std::vector<float> safe;
-    ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, safe));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, safe));
 
     std::vector<float> online;
-    ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, online));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, online));
 
     for (std::size_t i = 0; i < x.size(); ++i)
       EXPECT_NEAR(online[i], safe[i], DeviceTol(safe[i])) << "index " << i;
@@ -651,7 +649,7 @@ TEST_F(SoftmaxDevice, OnlineIsStableWhereNaiveOverflows) {
   const std::vector<float> x = {89.0f, 89.0f, 89.0f};
 
   std::vector<float> online;
-  ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, online));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, online));
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(online[i], kThird, kTol) << "index " << i;
   ExpectIsDistribution(online);
@@ -661,7 +659,7 @@ TEST_F(SoftmaxDevice, OnlineIsStableWhereNaiveUnderflows) {
   const std::vector<float> x = {-500.0f, -500.0f, -500.0f};
 
   std::vector<float> online;
-  ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, online));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, online));
   for (std::size_t i = 0; i < x.size(); ++i)
     EXPECT_NEAR(online[i], kThird, kTol) << "index " << i;
   ExpectIsDistribution(online);
@@ -689,7 +687,7 @@ TEST_F(SoftmaxDevice, SafeHandlesMaskedInput) {
     const std::vector<float> want = ReferenceSoftmax(x);
 
     std::vector<float> got;
-    ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, got));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, got));
 
     for (std::size_t i = 0; i < x.size(); ++i)
       EXPECT_NEAR(got[i], want[i], DeviceTol(want[i])) << "index " << i;
@@ -709,7 +707,7 @@ TEST_F(SoftmaxDevice, OnlineHandlesMaskedInput) {
     const std::vector<float> want = ReferenceSoftmax(x);
 
     std::vector<float> got;
-    ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, got));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, got));
 
     for (std::size_t i = 0; i < x.size(); ++i)
       EXPECT_NEAR(got[i], want[i], DeviceTol(want[i])) << "index " << i;
@@ -749,10 +747,10 @@ TEST_F(SoftmaxDevice, NaiveMatchesHostBatched) {
   const std::vector<float> x = DistinctRows(batch_size, V, -10.0f, 10.0f);
 
   std::vector<float> want(x.size());
-  naive_softmax_host(x.data(), want.data(), V, batch_size);
+  softmax_host(x.data(), want.data(), V, batch_size, SoftmaxType::Naive);
 
   std::vector<float> got;
-  ASSERT_NO_FATAL_FAILURE(Run(naive_softmax_dev, x, V, got));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Naive, x, V, got));
 
   ExpectBatchNear(got, want, V, DeviceTol);
   ExpectRowsAreDistributions(got, V);
@@ -766,7 +764,7 @@ TEST_F(SoftmaxDevice, SafeMatchesReferenceAcrossBatchShapes) {
     const std::vector<float> want = ReferenceSoftmaxBatched(x, V);
 
     std::vector<float> got;
-    ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, V, got));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, V, got));
 
     ExpectBatchNear(got, want, V, DeviceTol);
     ExpectRowsAreDistributions(got, V);
@@ -781,7 +779,7 @@ TEST_F(SoftmaxDevice, OnlineMatchesReferenceAcrossBatchShapes) {
     const std::vector<float> want = ReferenceSoftmaxBatched(x, V);
 
     std::vector<float> got;
-    ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, V, got));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, V, got));
 
     ExpectBatchNear(got, want, V, DeviceTol);
     ExpectRowsAreDistributions(got, V);
@@ -813,7 +811,7 @@ TEST_F(SoftmaxDevice, RowsAreIndependentBatched) {
   const std::vector<float> want = ReferenceSoftmaxBatched(x, V);
 
   std::vector<float> safe;
-  ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, V, safe));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, V, safe));
   {
     SCOPED_TRACE("safe");
     ExpectBatchNear(safe, want, V, DeviceTol);
@@ -821,7 +819,7 @@ TEST_F(SoftmaxDevice, RowsAreIndependentBatched) {
   }
 
   std::vector<float> online;
-  ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, V, online));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, V, online));
   {
     SCOPED_TRACE("online");
     ExpectBatchNear(online, want, V, DeviceTol);
@@ -829,7 +827,7 @@ TEST_F(SoftmaxDevice, RowsAreIndependentBatched) {
   }
 
   std::vector<float> naive;
-  ASSERT_NO_FATAL_FAILURE(Run(naive_softmax_dev, x, V, naive));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Naive, x, V, naive));
   for (const int r : {0, 3, 4, 5, 6}) {
     SCOPED_TRACE("naive, row " + std::to_string(r));
     const std::vector<float> got = Row(naive, V, r);
@@ -861,10 +859,10 @@ TEST_F(SoftmaxDevice, OnlineMatchesSafeBatched) {
   const std::vector<float> x = Batch(rows);
 
   std::vector<float> safe;
-  ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, V, safe));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, V, safe));
 
   std::vector<float> online;
-  ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, V, online));
+  ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, V, online));
 
   ExpectBatchNear(online, safe, V, DeviceTol);
   ExpectRowsAreDistributions(online, V);
@@ -884,7 +882,7 @@ TEST_F(SoftmaxDevice, VocabSizedRowsBatched) {
     const std::vector<float> want = ReferenceSoftmaxBatched(x, V);
 
     std::vector<float> safe;
-    ASSERT_NO_FATAL_FAILURE(Run(safe_softmax_dev, x, V, safe));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Safe, x, V, safe));
     {
       SCOPED_TRACE("safe");
       ExpectBatchNear(safe, want, V, DeviceTol);
@@ -892,7 +890,7 @@ TEST_F(SoftmaxDevice, VocabSizedRowsBatched) {
     }
 
     std::vector<float> online;
-    ASSERT_NO_FATAL_FAILURE(Run(online_softmax_dev, x, V, online));
+    ASSERT_NO_FATAL_FAILURE(Run(SoftmaxType::Online, x, V, online));
     {
       SCOPED_TRACE("online");
       ExpectBatchNear(online, want, V, DeviceTol);

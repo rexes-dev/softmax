@@ -105,14 +105,22 @@ __global__ void online_softmax_kernel(const float *x, float *y, int V) {
     y[j] = __expf(x[j] - m) / d;
 }
 
-void naive_softmax_dev(const float *x, float *y, int V, int batch_size) {
-  naive_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
-}
-
-void safe_softmax_dev(const float *x, float *y, int V, int batch_size) {
-  safe_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
-}
-
-void online_softmax_dev(const float *x, float *y, int V, int batch_size) {
-  online_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
+void softmax_dev(const float *x, float *y, int V, int batch_size,
+                 SoftmaxType softmax_type) {
+  switch (softmax_type) {
+  case SoftmaxType::Naive: {
+    naive_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
+    break;
+  }
+  case SoftmaxType::Safe: {
+    safe_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
+    break;
+  }
+  case SoftmaxType::Online: {
+    online_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
+    break;
+  }
+  default:
+    throw std::runtime_error("Unsupported SoftmaxType");
+  }
 }
