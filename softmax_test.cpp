@@ -1,4 +1,4 @@
-// WARNING: TESTS ARE CLAUDE GENERATED
+// NOTE: Tests are Claude generated.
 #include "softmax.h"
 
 #include <gtest/gtest.h>
@@ -833,8 +833,7 @@ TEST_F(SoftmaxDevice, RowsAreIndependentBatched) {
     const std::vector<float> got = Row(naive, V, r);
     const std::vector<float> row_want = Row(want, V, r);
     for (int i = 0; i < V; ++i)
-      EXPECT_NEAR(got[i], row_want[i], DeviceTol(row_want[i]))
-          << "index " << i;
+      EXPECT_NEAR(got[i], row_want[i], DeviceTol(row_want[i])) << "index " << i;
     ExpectIsDistribution(got);
   }
   for (const int r : {1, 2})
