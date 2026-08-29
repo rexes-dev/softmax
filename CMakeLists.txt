@@ -1,10 +1,7 @@
 cmake_minimum_required(VERSION 3.24)
 
 set(CMAKE_CUDA_ARCHITECTURES native)
-
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
-endif()
+set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 
 project(softmax LANGUAGES CXX CUDA)
 
@@ -38,6 +35,7 @@ set(BUILD_GMOCK OFF CACHE BOOL "" FORCE)
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-include(GoogleTest)
 add_executable(softmax_test softmax_test.cpp)
-target_link_libraries(softmax_test PRIVATE softmax GTest::gtest_main CUDA::cudart)
+add_executable(softmax_bench softmax_bench.cpp)
+target_link_libraries(softmax_test PRIVATE softmax GTest::gtest_main)
+target_link_libraries(softmax_bench PRIVATE softmax)

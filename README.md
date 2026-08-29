@@ -11,3 +11,6 @@ Implementation of [Online normalizer calculation for softmax](https://arxiv.org/
 ## References
 - [Online normalizer calculation for softmax](https://arxiv.org/pdf/1805.02867)
 - [Milakov's implementation](https://github.com/NVIDIA/online-softmax/tree/master)
+
+## Note
+- Tests are Claude-generated.

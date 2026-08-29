@@ -5,7 +5,11 @@
 
 constexpr int kBlockDim = 256;
 
-__global__ void naive_softmax_kernel(const float *x, float *y, std::size_t V) {
+__global__ void naive_softmax_kernel(const float *x, float *y, int V) {
+  const int batch_idx = blockIdx.x;
+  x += batch_idx * V;
+  y += batch_idx * V;
+
   const int i = threadIdx.x;
 
   float d_partial = 0.0f;
@@ -25,7 +29,11 @@ __global__ void naive_softmax_kernel(const float *x, float *y, std::size_t V) {
     y[j] = __expf(x[j]) / d;
 }
 
-__global__ void safe_softmax_kernel(const float *x, float *y, std::size_t V) {
+__global__ void safe_softmax_kernel(const float *x, float *y, int V) {
+  const int batch_idx = blockIdx.x;
+  x += batch_idx * V;
+  y += batch_idx * V;
+
   const int i = threadIdx.x;
 
   float m_partial = -cuda::std::numeric_limits<float>::max();
@@ -59,7 +67,11 @@ __global__ void safe_softmax_kernel(const float *x, float *y, std::size_t V) {
     y[j] = __expf(x[j] - m) / d;
 }
 
-__global__ void online_softmax_kernel(const float *x, float *y, std::size_t V) {
+__global__ void online_softmax_kernel(const float *x, float *y, int V) {
+  const int batch_idx = blockIdx.x;
+  x += batch_idx * V;
+  y += batch_idx * V;
+
   const int i = threadIdx.x;
 
   // associative && commutative op mentioned in the paper
@@ -93,19 +105,14 @@ __global__ void online_softmax_kernel(const float *x, float *y, std::size_t V) {
     y[j] = __expf(x[j] - m) / d;
 }
 
-void naive_softmax_dev(const float *x, float *y, std::size_t V) {
-  /*
-    Note that if the V is large, we can implement 2 CUDA kernels:
-    - First kernel calculate `d`
-    - Second kernel calculate `y[i]`
-  */
-  naive_softmax_kernel<<<1, kBlockDim>>>(x, y, V);
+void naive_softmax_dev(const float *x, float *y, int V, int batch_size) {
+  naive_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
 }
 
-void safe_softmax_dev(const float *x, float *y, std::size_t V) {
-  safe_softmax_kernel<<<1, kBlockDim>>>(x, y, V);
+void safe_softmax_dev(const float *x, float *y, int V, int batch_size) {
+  safe_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
 }
 
-void online_softmax_dev(const float *x, float *y, std::size_t V) {
-  online_softmax_kernel<<<1, kBlockDim>>>(x, y, V);
+void online_softmax_dev(const float *x, float *y, int V, int batch_size) {
+  online_softmax_kernel<<<batch_size, kBlockDim>>>(x, y, V);
 }
