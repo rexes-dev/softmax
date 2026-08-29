@@ -73,7 +73,8 @@ void run_bench(int V, int batch_size, SoftmaxType softmax_type) {
   });
   const auto avg_us = us / num_iter;
   std::cout << std::setw(8) << V << ' ' << std::setw(7) << batch_size << ' '
-            << std::setw(10) << avg_us << std::endl;
+            << std::setw(7) << to_string(softmax_type) << ' ' << std::setw(10)
+            << avg_us << std::endl;
   cudaFree(x);
   cudaFree(y);
 }
@@ -83,19 +84,21 @@ int main() {
   std::cout << '\n'
             << "Sweep: batch_size  (V = 128256)" << '\n'
             << std::setw(8) << "V" << ' ' << std::setw(7) << "batch" << ' '
-            << std::setw(10) << "avg (us)\n";
+            << std::setw(7) << "type" << ' ' << std::setw(10) << "avg (us)\n";
   for (int batch_size : {1, 64, getSMCount(), 1024, 4096}) {
     const int V = 128256;
-    run_bench(V, batch_size, SoftmaxType::Safe);
+    for (const auto t : {SoftmaxType::Safe, SoftmaxType::Online})
+      run_bench(V, batch_size, t);
   }
 
   std::cout << '\n'
             << "Sweep: V  (batch_size = 4096)" << '\n'
             << std::setw(8) << "V" << ' ' << std::setw(7) << "batch" << ' '
-            << std::setw(10) << "avg (us)\n";
+            << std::setw(7) << "type" << ' ' << std::setw(10) << "avg (us)\n";
   for (int V : {32000, 50257, 128256, 151936, 256000}) {
     const int batch_size = 4096;
-    run_bench(V, batch_size, SoftmaxType::Safe);
+    for (const auto t : {SoftmaxType::Safe, SoftmaxType::Online})
+      run_bench(V, batch_size, t);
   }
 
   return 0;
